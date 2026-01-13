@@ -8,15 +8,27 @@ public static class OpenIddictSeeder
     public static async Task SeedClientsAsync(IServiceProvider serviceProvider)
     {
         var manager = serviceProvider.GetRequiredService<IOpenIddictApplicationManager>();
+        var config = serviceProvider.GetRequiredService<IConfiguration>();
 
-        // Example: Seed a default client if it doesn't exist
-        if (await manager.FindByClientIdAsync("gatekeeper-dev-client") is null)
+        var clientSection = config.GetSection("OpenIddict:Clients:GatekeeperDevClient");
+        var clientId = clientSection["ClientId"];
+        var clientSecret = clientSection["ClientSecret"];
+        var displayName = clientSection["DisplayName"];
+        var redirectUri = clientSection["RedirectUri"];
+        var postLogoutRedirectUri = clientSection["PostLogoutRedirectUri"];
+
+        if (string.IsNullOrWhiteSpace(clientId) || string.IsNullOrWhiteSpace(clientSecret) || string.IsNullOrWhiteSpace(displayName) || string.IsNullOrWhiteSpace(redirectUri) || string.IsNullOrWhiteSpace(postLogoutRedirectUri))
+        {
+            throw new InvalidOperationException("Missing required OpenIddict:Clients:GatekeeperDevClient configuration values.");
+        }
+
+        if (await manager.FindByClientIdAsync(clientId) is null)
         {
             await manager.CreateAsync(new OpenIddictApplicationDescriptor
             {
-                ClientId = "gatekeeper-dev-client",
-                ClientSecret = "dev-secret", // Use a secure secret in production
-                DisplayName = "Gatekeeper Dev Client",
+                ClientId = clientId,
+                ClientSecret = clientSecret,
+                DisplayName = displayName,
                 Permissions =
                 {
                     OpenIddictConstants.Permissions.Endpoints.Authorization,
@@ -26,8 +38,8 @@ public static class OpenIddictSeeder
                     OpenIddictConstants.Permissions.ResponseTypes.Code,
                     OpenIddictConstants.Permissions.Prefixes.Scope + "api"
                 },
-                RedirectUris = { new Uri("https://localhost:5001/signin-oidc") },
-                PostLogoutRedirectUris = { new Uri("https://localhost:5001/signout-callback-oidc") }
+                RedirectUris = { new Uri(redirectUri) },
+                PostLogoutRedirectUris = { new Uri(postLogoutRedirectUri) }
             });
         }
     }

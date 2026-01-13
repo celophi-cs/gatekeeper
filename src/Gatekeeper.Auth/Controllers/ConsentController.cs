@@ -4,59 +4,59 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Http;
 using OpenIddict.Abstractions;
 using OpenIddict.Server.AspNetCore;
-using Gatekeeper.Auth.Models;
 using Gatekeeper.Auth.Extensions;
+using Gatekeeper.Auth.Models;
 
 namespace Gatekeeper.Auth.Controllers
 {
-    [Route("consent")]
-    public class ConsentController : Controller
+    [ApiController]
+    [ApiVersion("1.0")]
+    [Route("api/consent")]
+    public class ConsentController : ControllerBase
     {
-        private readonly IOpenIddictApplicationManager _applicationManager;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public ConsentController(IOpenIddictApplicationManager applicationManager)
+        public ConsentController(IHttpContextAccessor httpContextAccessor)
         {
-            _applicationManager = applicationManager;
+            _httpContextAccessor = httpContextAccessor;
         }
 
-        [HttpGet]
-        public async Task<IActionResult> Index()
+        [HttpGet("{requestId}")]
+        public IActionResult Get(string requestId)
         {
             var request = HttpContext.GetOpenIddictServerRequest()
                           ?? throw new InvalidOperationException("OpenIddict request missing.");
 
-            var client = await _applicationManager.FindByClientIdAsync(request.ClientId ?? string.Empty);
-            if (client == null) return BadRequest("Unknown client.");
-
-            var vm = new ConsentViewModel
+            // Return client info + requested scopes to Blazor app
+            return Ok(new
             {
-                ClientId = request.ClientId,
-                ClientName = (await _applicationManager.GetDisplayNameAsync(client)) ?? request.ClientId,
-                Scopes = request.GetScopes().AsEnumerable() ?? Enumerable.Empty<string>(),
+                request.ClientId,
+                ClientName = request.ClientId, // replace with DB lookup if needed
+                Scopes = request.GetScopes(),
                 RequestId = request.RequestId
-            };
-
-            return View(vm);
+            });
         }
 
-        [HttpPost]
-        public async Task<IActionResult> Accept(string requestId, string[] scopes)
+        [HttpPost("approve")]
+        public async Task<IActionResult> Approve([FromBody] ConsentApprovalDto dto)
         {
             var request = HttpContext.GetOpenIddictServerRequest()
                           ?? throw new InvalidOperationException("OpenIddict request missing.");
 
-            var subject = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? throw new InvalidOperationException("User missing subject.");
+            if (!(User?.Identity?.IsAuthenticated ?? false))
+                return Unauthorized();
 
+            // Build claims for the consent
             var identity = new ClaimsIdentity(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
-            identity.AddClaim(OpenIddictConstants.Claims.Subject, subject);
+            identity.AddClaim(OpenIddictConstants.Claims.Subject, User.FindFirstValue(ClaimTypes.NameIdentifier));
+            identity.SetScopes(dto.Scopes); // Scopes user approved
 
             var principal = new ClaimsPrincipal(identity);
-            principal.SetScopes(scopes ?? Enumerable.Empty<string>().ToArray());
 
-            await HttpContext.SignInAsync(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme, principal);
-
+            // Sign in to complete the consent flow
             return SignIn(principal, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
         }
     }

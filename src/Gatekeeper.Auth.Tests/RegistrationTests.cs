@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
-using Gatekeeper.Auth;
+using Gatekeeper.Auth.Data;
 using Microsoft.EntityFrameworkCore;
 
 namespace Gatekeeper.Auth.Tests;
@@ -14,10 +14,10 @@ public class RegistrationTests
     {
         var services = new ServiceCollection();
         services.AddLogging();
-        services.AddDbContext<AuthDbContext>(options =>
+        services.AddDbContext<Gatekeeper.Auth.Data.AuthDbContext>(options =>
             options.UseInMemoryDatabase("TestDb"));
         services.AddIdentity<IdentityUser, IdentityRole>()
-            .AddEntityFrameworkStores<AuthDbContext>()
+            .AddEntityFrameworkStores<Gatekeeper.Auth.Data.AuthDbContext>()
             .AddDefaultTokenProviders();
         var provider = services.BuildServiceProvider();
         var userManager = provider.GetRequiredService<UserManager<IdentityUser>>();
