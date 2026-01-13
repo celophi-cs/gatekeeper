@@ -15,7 +15,14 @@ public class CosmosDbService
     {
         var endpoint = config["Cosmos:AccountEndpoint"];
         var key = config["Cosmos:AccountKey"];
-        _client = new CosmosClient(endpoint, key);
+        var options = new CosmosClientOptions
+        {
+            SerializerOptions = new CosmosSerializationOptions
+            {
+                PropertyNamingPolicy = CosmosPropertyNamingPolicy.CamelCase // Use camelCase for property names
+            }
+        };
+        _client = new CosmosClient(endpoint, key, options);
         _db = _client.GetDatabase("OpenIdDB");
 
         UsersContainer = _db.GetContainer("Users");

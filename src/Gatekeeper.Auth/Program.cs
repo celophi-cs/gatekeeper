@@ -6,6 +6,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services
 builder.Services.AddSingleton<CosmosDbService>();
+builder.Services.AddSingleton<CosmosDbSeeder>();
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options => options.LoginPath = "/login");
 builder.Services.AddOpenIddict()
@@ -34,6 +35,13 @@ builder.Services.AddOpenIddict()
 builder.Services.AddAuthorization();
 
 var app = builder.Build();
+
+// Seed Cosmos DB
+using (var scope = app.Services.CreateScope())
+{
+    var seeder = scope.ServiceProvider.GetRequiredService<CosmosDbSeeder>();
+    await seeder.SeedAsync();
+}
 
 // Map endpoints
 var authApi = new AuthApi(app.Services.GetRequiredService<CosmosDbService>());

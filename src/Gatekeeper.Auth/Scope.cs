@@ -1,12 +1,17 @@
 using System;
+using System.Text.Json.Serialization;
 
 namespace Gatekeeper.Auth
 {
-    public record Scope
+    public sealed record Scope
     {
-        public string Id { get; init; } = Guid.NewGuid().ToString();
-        public string Name { get; init; } = string.Empty;
-        public string Description { get; init; } = string.Empty;
-        public string[] Resources { get; init; } = Array.Empty<string>();
+        [JsonPropertyName("id")]
+        public required string Id { get; init; }
+        [JsonPropertyName("name")]
+        public required string Name { get; init; }
+        [JsonPropertyName("description")]
+        public required string Description { get; init; }
+        [JsonPropertyName("resources")]
+        public required string[] Resources { get; init; }
     }
 }

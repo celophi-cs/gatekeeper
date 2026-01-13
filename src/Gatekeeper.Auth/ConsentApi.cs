@@ -37,13 +37,14 @@ public class ConsentApi
             return Results.Unauthorized();
 
         var userId = context.User.FindFirstValue(ClaimTypes.NameIdentifier);
-        var auth = new Authorization(
-            Id: Guid.NewGuid().ToString(),
-            UserId: userId,
-            ClientId: dto.ClientId,
-            Scopes: dto.Scopes,
-            Status: "granted"
-        );
+        var auth = new Authorization
+        {
+            Id = Guid.NewGuid().ToString(),
+            UserId = userId,
+            ClientId = dto.ClientId,
+            Scopes = dto.Scopes,
+            Status = "granted"
+        };
 
         await _cosmos.AuthorizationsContainer.CreateItemAsync(auth, new PartitionKey(auth.UserId));
 
