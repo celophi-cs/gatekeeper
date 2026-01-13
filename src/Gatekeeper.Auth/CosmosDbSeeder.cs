@@ -20,6 +20,27 @@ public class CosmosDbSeeder
     {
         await SeedUserAsync();
         await SeedClientAsync();
+        await SeedScopesAsync();
+    }
+    private async Task SeedScopesAsync()
+    {
+        var defaultScopes = new[]
+        {
+            new Scope { Id = "openid", Name = "openid", Description = "OpenID Connect standard scope", Resources = Array.Empty<string>() },
+            new Scope { Id = "profile", Name = "profile", Description = "Basic user profile information", Resources = Array.Empty<string>() },
+            new Scope { Id = "email", Name = "email", Description = "User email address", Resources = Array.Empty<string>() }
+        };
+
+        foreach (var scope in defaultScopes)
+        {
+            var query = new QueryDefinition("SELECT * FROM c WHERE c.id = @id").WithParameter("@id", scope.Id);
+            var iterator = _cosmos.ScopesContainer.GetItemQueryIterator<Scope>(query);
+            var existing = (await iterator.ReadNextAsync()).FirstOrDefault();
+            if (existing == null)
+            {
+                await _cosmos.ScopesContainer.CreateItemAsync(scope, new PartitionKey(scope.Id));
+            }
+        }
     }
 
     private async Task SeedUserAsync()

@@ -1,184 +1,155 @@
-using OpenIddict.Abstractions;
+using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Globalization;
+using System.Linq;
 using System.Text.Json;
+using System.Text.Json.Serialization;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.Azure.Cosmos;
+using OpenIddict.Abstractions;
 
 namespace Gatekeeper.Auth
 {
-    // Replace 'Scope' with your actual scope entity/model if needed
     public class CosmosScopeStore : IOpenIddictScopeStore<Scope>
     {
-        private readonly ICosmosDbProvider _cosmosDbProvider;
+        private readonly ICosmosDbProvider _cosmos;
 
-        public CosmosScopeStore(ICosmosDbProvider cosmosDbProvider)
+        public CosmosScopeStore(ICosmosDbProvider cosmos)
         {
-            _cosmosDbProvider = cosmosDbProvider;
+            _cosmos = cosmos;
         }
 
-        // Implement required methods for IOpenIddictScopeStore<Scope>
-        public Task<long> CountAsync(CancellationToken cancellationToken)
+        // Find a scope by its name (e.g., "openid", "profile")
+        public async ValueTask<Scope?> FindByNameAsync(string name, CancellationToken cancellationToken)
         {
-            throw new System.NotImplementedException();
+            var query = new QueryDefinition("SELECT * FROM c WHERE c.name = @name")
+                .WithParameter("@name", name);
+
+            using var iterator = _cosmos.ScopesContainer.GetItemQueryIterator<Scope>(query);
+
+            while (iterator.HasMoreResults)
+            {
+                var response = await iterator.ReadNextAsync(cancellationToken);
+                foreach (var scope in response)
+                    return scope;
+            }
+
+            return null;
         }
 
-        public Task CreateAsync(Scope scope, CancellationToken cancellationToken)
-        {
-            throw new System.NotImplementedException();
-        }
-
-        public Task DeleteAsync(Scope scope, CancellationToken cancellationToken)
-        {
-            throw new System.NotImplementedException();
-        }
-
-        public Task<Scope?> FindByIdAsync(string identifier, CancellationToken cancellationToken)
-        {
-            throw new System.NotImplementedException();
-        }
-
-        public Task UpdateAsync(Scope scope, CancellationToken cancellationToken)
-        {
-            throw new System.NotImplementedException();
-        }
-
-        public IAsyncEnumerable<Scope> ListAsync(int? count, int? offset, CancellationToken cancellationToken)
-        {
-            throw new System.NotImplementedException();
-        }
-
-        ValueTask<long> IOpenIddictScopeStore<Scope>.CountAsync(CancellationToken cancellationToken)
-        {
-            throw new NotImplementedException();
-        }
-
-        public ValueTask<long> CountAsync<TResult>(Func<IQueryable<Scope>, IQueryable<TResult>> query, CancellationToken cancellationToken)
-        {
-            throw new NotImplementedException();
-        }
-
-        ValueTask IOpenIddictScopeStore<Scope>.CreateAsync(Scope scope, CancellationToken cancellationToken)
-        {
-            throw new NotImplementedException();
-        }
-
-        ValueTask IOpenIddictScopeStore<Scope>.DeleteAsync(Scope scope, CancellationToken cancellationToken)
-        {
-            throw new NotImplementedException();
-        }
-
-        ValueTask<Scope?> IOpenIddictScopeStore<Scope>.FindByIdAsync(string identifier, CancellationToken cancellationToken)
-        {
-            throw new NotImplementedException();
-        }
-
-        public ValueTask<Scope?> FindByNameAsync(string name, CancellationToken cancellationToken)
-        {
-            throw new NotImplementedException();
-        }
-
+        // Find scopes by a set of names
         public IAsyncEnumerable<Scope> FindByNamesAsync(ImmutableArray<string> names, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            if (names.IsDefaultOrEmpty)
+                return EmptyAsync();
+
+            var sql = "SELECT * FROM c WHERE ARRAY_CONTAINS(@names, c.name)";
+            var queryDef = new QueryDefinition(sql)
+                .WithParameter("@names", names.ToArray());
+            var iterator = _cosmos.ScopesContainer.GetItemQueryIterator<Scope>(queryDef);
+
+            return FetchAsync(iterator, cancellationToken);
         }
 
-        public IAsyncEnumerable<Scope> FindByResourceAsync(string resource, CancellationToken cancellationToken)
+        private static async IAsyncEnumerable<Scope> EmptyAsync()
         {
-            throw new NotImplementedException();
+            yield break;
         }
 
-        public ValueTask<TResult?> GetAsync<TState, TResult>(Func<IQueryable<Scope>, TState, IQueryable<TResult>> query, TState state, CancellationToken cancellationToken)
+        private static async IAsyncEnumerable<Scope> FetchAsync(FeedIterator<Scope> iterator, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
-        }
-
-        public ValueTask<string?> GetDescriptionAsync(Scope scope, CancellationToken cancellationToken)
-        {
-            throw new NotImplementedException();
-        }
-
-        public ValueTask<ImmutableDictionary<CultureInfo, string>> GetDescriptionsAsync(Scope scope, CancellationToken cancellationToken)
-        {
-            throw new NotImplementedException();
-        }
-
-        public ValueTask<string?> GetDisplayNameAsync(Scope scope, CancellationToken cancellationToken)
-        {
-            throw new NotImplementedException();
-        }
-
-        public ValueTask<ImmutableDictionary<CultureInfo, string>> GetDisplayNamesAsync(Scope scope, CancellationToken cancellationToken)
-        {
-            throw new NotImplementedException();
+            while (iterator.HasMoreResults)
+            {
+                foreach (var item in await iterator.ReadNextAsync(cancellationToken))
+                {
+                    yield return item;
+                }
+            }
         }
 
         public ValueTask<string?> GetIdAsync(Scope scope, CancellationToken cancellationToken)
-        {
-            throw new NotImplementedException();
-        }
+            => ValueTask.FromResult<string?>(scope.Id);
 
         public ValueTask<string?> GetNameAsync(Scope scope, CancellationToken cancellationToken)
-        {
-            throw new NotImplementedException();
-        }
+            => ValueTask.FromResult<string?>(scope.Name);
 
-        public ValueTask<ImmutableDictionary<string, JsonElement>> GetPropertiesAsync(Scope scope, CancellationToken cancellationToken)
-        {
-            throw new NotImplementedException();
-        }
+        public ValueTask<string?> GetDescriptionAsync(Scope scope, CancellationToken cancellationToken)
+            => ValueTask.FromResult<string?>(scope.Description);
 
         public ValueTask<ImmutableArray<string>> GetResourcesAsync(Scope scope, CancellationToken cancellationToken)
-        {
-            throw new NotImplementedException();
-        }
+            => ValueTask.FromResult(ImmutableArray<string>.Empty);
 
-        public ValueTask<Scope> InstantiateAsync(CancellationToken cancellationToken)
+        public ValueTask<ImmutableArray<string>> GetPermissionsAsync(Scope scope, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
-        }
-
-        public IAsyncEnumerable<TResult> ListAsync<TState, TResult>(Func<IQueryable<Scope>, TState, IQueryable<TResult>> query, TState state, CancellationToken cancellationToken)
-        {
-            throw new NotImplementedException();
-        }
-
-        public ValueTask SetDescriptionAsync(Scope scope, string? description, CancellationToken cancellationToken)
-        {
-            throw new NotImplementedException();
-        }
-
-        public ValueTask SetDescriptionsAsync(Scope scope, ImmutableDictionary<CultureInfo, string> descriptions, CancellationToken cancellationToken)
-        {
-            throw new NotImplementedException();
-        }
-
-        public ValueTask SetDisplayNameAsync(Scope scope, string? name, CancellationToken cancellationToken)
-        {
-            throw new NotImplementedException();
-        }
-
-        public ValueTask SetDisplayNamesAsync(Scope scope, ImmutableDictionary<CultureInfo, string> names, CancellationToken cancellationToken)
-        {
-            throw new NotImplementedException();
+            // Usually scopes define permissions; for now, just return empty
+            return ValueTask.FromResult(ImmutableArray<string>.Empty);
         }
 
         public ValueTask SetNameAsync(Scope scope, string? name, CancellationToken cancellationToken)
-        {
-            throw new NotImplementedException();
-        }
+            => throw new NotSupportedException("Scope properties are init-only");
 
-        public ValueTask SetPropertiesAsync(Scope scope, ImmutableDictionary<string, JsonElement> properties, CancellationToken cancellationToken)
-        {
-            throw new NotImplementedException();
-        }
+        public ValueTask SetDescriptionAsync(Scope scope, string? description, CancellationToken cancellationToken)
+            => throw new NotSupportedException("Scope properties are init-only");
 
         public ValueTask SetResourcesAsync(Scope scope, ImmutableArray<string> resources, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            // Not implemented yet; your scopes container could store resources if needed
+            return ValueTask.CompletedTask;
         }
 
-        ValueTask IOpenIddictScopeStore<Scope>.UpdateAsync(Scope scope, CancellationToken cancellationToken)
+        public ValueTask SetPermissionsAsync(Scope scope, ImmutableArray<string> permissions, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            // Not implemented yet; can store in Cosmos if you want
+            return ValueTask.CompletedTask;
         }
+
+        // Other methods can throw NotImplementedException if you don't use them yet
+        public ValueTask<Scope> InstantiateAsync(CancellationToken cancellationToken)
+            => ValueTask.FromResult(new Scope { Id = Guid.NewGuid().ToString(), Name = string.Empty, Description = string.Empty, Resources = Array.Empty<string>() });
+    // Stub implementations for required interface members
+    public ValueTask<Scope?> FindByIdAsync(string identifier, CancellationToken cancellationToken) => throw new NotImplementedException();
+    public IAsyncEnumerable<Scope> FindByResourceAsync(string resource, CancellationToken cancellationToken) => throw new NotImplementedException();
+    public ValueTask<ImmutableDictionary<CultureInfo, string>> GetDescriptionsAsync(Scope scope, CancellationToken cancellationToken) => throw new NotImplementedException();
+    public ValueTask<string?> GetDisplayNameAsync(Scope scope, CancellationToken cancellationToken) => throw new NotImplementedException();
+    public ValueTask<ImmutableDictionary<CultureInfo, string>> GetDisplayNamesAsync(Scope scope, CancellationToken cancellationToken) => throw new NotImplementedException();
+    public ValueTask<ImmutableDictionary<string, JsonElement>> GetPropertiesAsync(Scope scope, CancellationToken cancellationToken) => throw new NotImplementedException();
+    public ValueTask SetDescriptionsAsync(Scope scope, ImmutableDictionary<CultureInfo, string> descriptions, CancellationToken cancellationToken) => throw new NotImplementedException();
+    public ValueTask SetDisplayNameAsync(Scope scope, string? displayName, CancellationToken cancellationToken) => throw new NotImplementedException();
+    public ValueTask SetDisplayNamesAsync(Scope scope, ImmutableDictionary<CultureInfo, string> displayNames, CancellationToken cancellationToken) => throw new NotImplementedException();
+    public ValueTask SetPropertiesAsync(Scope scope, ImmutableDictionary<string, JsonElement> properties, CancellationToken cancellationToken) => throw new NotImplementedException();
+
+        public ValueTask CreateAsync(Scope scope, CancellationToken cancellationToken)
+            => throw new NotImplementedException();
+
+        public ValueTask UpdateAsync(Scope scope, CancellationToken cancellationToken)
+            => throw new NotImplementedException();
+
+        public ValueTask DeleteAsync(Scope scope, CancellationToken cancellationToken)
+            => throw new NotImplementedException();
+
+        public IAsyncEnumerable<Scope> ListAsync(int? count, int? offset, CancellationToken cancellationToken)
+            => throw new NotImplementedException();
+
+        public IAsyncEnumerable<TResult> ListAsync<TState, TResult>(
+            Func<IQueryable<Scope>, TState, IQueryable<TResult>> query,
+            TState state,
+            CancellationToken cancellationToken)
+            => throw new NotImplementedException();
+
+        public ValueTask<long> CountAsync(CancellationToken cancellationToken)
+            => throw new NotImplementedException();
+
+        public ValueTask<long> CountAsync<TResult>(
+            Func<IQueryable<Scope>, IQueryable<TResult>> query,
+            CancellationToken cancellationToken)
+            => throw new NotImplementedException();
+
+        public ValueTask<TResult?> GetAsync<TState, TResult>(
+            Func<IQueryable<Scope>, TState, IQueryable<TResult>> query,
+            TState state,
+            CancellationToken cancellationToken)
+            => throw new NotImplementedException();
     }
 }

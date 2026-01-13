@@ -11,6 +11,7 @@ public class CosmosDbProvider : ICosmosDbProvider
     public Container ClientsContainer { get; }
     public Container AuthorizationsContainer { get; }
     public Container TokensContainer { get; }
+    public Container ScopesContainer { get; }
 
     public CosmosDbProvider(IOptions<CosmosOptions> options)
     {
@@ -31,5 +32,6 @@ public class CosmosDbProvider : ICosmosDbProvider
         ClientsContainer = _db.GetContainer("Clients");
         AuthorizationsContainer = _db.GetContainer("Authorizations");
         TokensContainer = _db.GetContainer("Tokens");
+        ScopesContainer = _db.GetContainer("Scopes");
     }
 }

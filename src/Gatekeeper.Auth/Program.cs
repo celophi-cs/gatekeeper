@@ -35,13 +35,18 @@ builder.Services.AddOpenIddict()
     // 🔑 CORE (stores + entities)
     .AddCore(options =>
     {
-        // THIS WAS MISSING — REQUIRED
+        // Set default application and scope entities
         options.SetDefaultApplicationEntity<Client>();
+        options.SetDefaultScopeEntity<Scope>();
 
         // Only register the ONE store we need right now
         options.Services.AddSingleton<
             IOpenIddictApplicationStore<Client>,
             CosmosApplicationStore>();
+        // Register CosmosScopeStore as the default scope store
+        options.Services.AddSingleton<
+            IOpenIddictScopeStore<Scope>,
+            CosmosScopeStore>();
     })
 
     // 🔑 SERVER

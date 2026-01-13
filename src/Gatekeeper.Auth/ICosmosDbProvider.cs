@@ -8,4 +8,5 @@ public interface ICosmosDbProvider
     Container ClientsContainer { get; }
     Container AuthorizationsContainer { get; }
     Container TokensContainer { get; }
+    Container ScopesContainer { get; }
 }
