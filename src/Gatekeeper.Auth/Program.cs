@@ -8,7 +8,10 @@ using OpenIddict.Abstractions;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add controllers and API versioning
-builder.Services.AddControllers();
+builder.Services.AddControllers(options =>
+{
+    options.Filters.Add<Gatekeeper.Auth.Filters.ProblemDetailsExceptionFilterAttribute>();
+});
 builder.Services.AddApiVersioning(options =>
 {
     options.DefaultApiVersion = new Microsoft.AspNetCore.Mvc.ApiVersion(1, 0);
@@ -84,6 +87,9 @@ builder.Services.AddOpenIddict()
         options.AllowAuthorizationCodeFlow().RequireProofKeyForCodeExchange();
         options.AllowRefreshTokenFlow();
         options.AcceptAnonymousClients();
+        // For tests/dev only: allow HTTP (OpenIddict blocks non-HTTPS by default)
+        // Note: some OpenIddict versions do not expose DisableTransportSecurityRequirement()
+        // so this call is omitted to maintain compatibility.
         options.UseAspNetCore()
             .EnableTokenEndpointPassthrough()
             .EnableAuthorizationEndpointPassthrough();
@@ -111,24 +117,37 @@ if (!useInMemory)
     }
 }
 
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
+// Global ProblemDetails middleware
+app.UseMiddleware<Gatekeeper.Auth.Middleware.ProblemDetailsMiddleware>();
+
+
 app.UseHttpsRedirection();
 app.UseAuthentication();
+
+// Ensure unauthenticated /connect/authorize requests return 401 before OpenIddict validation
+app.Use(async (context, next) =>
+{
+    if (context.Request.Path.StartsWithSegments("/connect/authorize") && !(context.User?.Identity?.IsAuthenticated ?? false))
+    {
+        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+        return;
+    }
+    await next();
+});
+
 app.UseAuthorization();
-
-
-
 
 // Map controllers
 app.MapControllers();
 
-
-
-app.Run();
+// Map minimal endpoints (register/login)
+Gatekeeper.Auth.AuthEndpoints.MapAuthEndpoints(app);
 
 app.Run();

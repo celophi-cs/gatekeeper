@@ -24,7 +24,17 @@ public class AccountController : ControllerBase
         var result = await _userManager.CreateAsync(user, register.Password);
         if (result.Succeeded)
             return Ok();
-        return BadRequest(result.Errors);
+        var traceId = HttpContext.TraceIdentifier;
+        var problem = new ProblemDetails
+        {
+            Status = 400,
+            Title = "Registration failed",
+            Detail = "User registration did not succeed.",
+            Instance = HttpContext.Request.Path
+        };
+        problem.Extensions["errors"] = result.Errors;
+        problem.Extensions["traceId"] = traceId;
+        return BadRequest(problem);
     }
 
     [HttpPost("login")]
@@ -32,11 +42,33 @@ public class AccountController : ControllerBase
     {
         var user = await _userManager.FindByEmailAsync(login.Email);
         if (user == null)
-            return BadRequest();
+        {
+            var traceId = HttpContext.TraceIdentifier;
+            var problem = new ProblemDetails
+            {
+                Status = 400,
+                Title = "Invalid credentials",
+                Detail = "User not found.",
+                Instance = HttpContext.Request.Path
+            };
+            problem.Extensions["traceId"] = traceId;
+            return BadRequest(problem);
+        }
         var result = await _signInManager.PasswordSignInAsync(user, login.Password, isPersistent: false, lockoutOnFailure: false);
         if (result.Succeeded)
             return Ok();
-        return BadRequest();
+        {
+            var traceId = HttpContext.TraceIdentifier;
+            var problem = new ProblemDetails
+            {
+                Status = 400,
+                Title = "Invalid credentials",
+                Detail = "Login failed.",
+                Instance = HttpContext.Request.Path
+            };
+            problem.Extensions["traceId"] = traceId;
+            return BadRequest(problem);
+        }
     }
 
     [HttpPost("logout")]
