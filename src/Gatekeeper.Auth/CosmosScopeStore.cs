@@ -8,11 +8,11 @@ namespace Gatekeeper.Auth
     // Replace 'Scope' with your actual scope entity/model if needed
     public class CosmosScopeStore : IOpenIddictScopeStore<Scope>
     {
-        private readonly CosmosDbService _cosmosDbService;
+        private readonly ICosmosDbProvider _cosmosDbProvider;
 
-        public CosmosScopeStore(CosmosDbService cosmosDbService)
+        public CosmosScopeStore(ICosmosDbProvider cosmosDbProvider)
         {
-            _cosmosDbService = cosmosDbService;
+            _cosmosDbProvider = cosmosDbProvider;
         }
 
         // Implement required methods for IOpenIddictScopeStore<Scope>

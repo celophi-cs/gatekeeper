@@ -7,11 +7,11 @@ namespace Gatekeeper.Auth
     // Replace 'Token' with your actual token entity/model if needed
     public class CosmosTokenStore : IOpenIddictTokenStore<Token>
     {
-        private readonly CosmosDbService _cosmosDbService;
+        private readonly ICosmosDbProvider _cosmosDbProvider;
 
-        public CosmosTokenStore(CosmosDbService cosmosDbService)
+        public CosmosTokenStore(ICosmosDbProvider cosmosDbProvider)
         {
-            _cosmosDbService = cosmosDbService;
+            _cosmosDbProvider = cosmosDbProvider;
         }
 
         // Implement required methods for IOpenIddictTokenStore<Token>

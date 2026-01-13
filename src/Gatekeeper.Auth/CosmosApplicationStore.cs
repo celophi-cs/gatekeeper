@@ -9,12 +9,11 @@ namespace Gatekeeper.Auth
     // Replace 'Client' with your actual client entity/model if needed
     public class CosmosApplicationStore : IOpenIddictApplicationStore<Client>
     {
-        // TODO: Inject CosmosDbService or equivalent for actual data access
-        private readonly CosmosDbService _cosmosDbService;
+        private readonly ICosmosDbProvider _cosmosDbProvider;
 
-        public CosmosApplicationStore(CosmosDbService cosmosDbService)
+        public CosmosApplicationStore(ICosmosDbProvider cosmosDbProvider)
         {
-            _cosmosDbService = cosmosDbService;
+            _cosmosDbProvider = cosmosDbProvider;
         }
 
         // Implement required methods for IOpenIddictApplicationStore<Client>

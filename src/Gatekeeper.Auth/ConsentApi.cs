@@ -8,9 +8,9 @@ namespace Gatekeeper.Auth;
 
 public class ConsentApi
 {
-    private readonly CosmosDbService _cosmos;
+    private readonly ICosmosDbProvider _cosmos;
 
-    public ConsentApi(CosmosDbService cosmos) => _cosmos = cosmos;
+    public ConsentApi(ICosmosDbProvider cosmos) => _cosmos = cosmos;
 
     public async Task<IResult> GetConsent(HttpContext context)
     {

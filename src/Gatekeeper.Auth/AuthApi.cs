@@ -8,9 +8,9 @@ using System.Security.Claims;
 
 public class AuthApi
 {
-    private readonly CosmosDbService _cosmos;
+    private readonly ICosmosDbProvider _cosmos;
 
-    public AuthApi(CosmosDbService cosmos) => _cosmos = cosmos;
+    public AuthApi(ICosmosDbProvider cosmos) => _cosmos = cosmos;
 
     public async Task<IResult> Login(HttpContext context, string email, string password)
     {

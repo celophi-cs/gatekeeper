@@ -7,10 +7,10 @@ namespace Gatekeeper.Auth;
 
 public class CosmosDbSeeder
 {
-    private readonly CosmosDbService _cosmos;
+    private readonly ICosmosDbProvider _cosmos;
     private readonly SeedDataOptions _seedData;
 
-    public CosmosDbSeeder(CosmosDbService cosmos, IOptions<SeedDataOptions> seedDataOptions)
+    public CosmosDbSeeder(ICosmosDbProvider cosmos, IOptions<SeedDataOptions> seedDataOptions)
     {
         _cosmos = cosmos;
         _seedData = seedDataOptions.Value;

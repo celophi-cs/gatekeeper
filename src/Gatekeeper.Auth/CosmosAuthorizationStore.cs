@@ -7,11 +7,11 @@ namespace Gatekeeper.Auth
     // Replace 'Authorization' with your actual authorization entity/model if needed
     public class CosmosAuthorizationStore : IOpenIddictAuthorizationStore<Authorization>
     {
-        private readonly CosmosDbService _cosmosDbService;
+        private readonly ICosmosDbProvider _cosmosDbProvider;
 
-        public CosmosAuthorizationStore(CosmosDbService cosmosDbService)
+        public CosmosAuthorizationStore(ICosmosDbProvider cosmosDbProvider)
         {
-            _cosmosDbService = cosmosDbService;
+            _cosmosDbProvider = cosmosDbProvider;
         }
 
         // Implement required methods for IOpenIddictAuthorizationStore<Authorization>

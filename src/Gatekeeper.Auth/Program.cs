@@ -6,7 +6,8 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services
 builder.Services.Configure<SeedDataOptions>(builder.Configuration.GetSection("SeedData"));
-builder.Services.AddSingleton<CosmosDbService>();
+builder.Services.Configure<CosmosOptions>(builder.Configuration.GetSection("Cosmos"));
+builder.Services.AddSingleton<ICosmosDbProvider, CosmosDbProvider>();
 builder.Services.AddSingleton<CosmosDbSeeder>();
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options => options.LoginPath = "/login");
@@ -45,8 +46,8 @@ using (var scope = app.Services.CreateScope())
 }
 
 // Map endpoints
-var authApi = new AuthApi(app.Services.GetRequiredService<CosmosDbService>());
-var consentApi = new ConsentApi(app.Services.GetRequiredService<CosmosDbService>());
+var authApi = new AuthApi(app.Services.GetRequiredService<ICosmosDbProvider>());
+var consentApi = new ConsentApi(app.Services.GetRequiredService<ICosmosDbProvider>());
 
 app.MapPost("/api/login", (HttpContext ctx, string email, string password) => authApi.Login(ctx, email, password));
 app.MapPost("/api/logout", (HttpContext ctx) => authApi.Logout(ctx));

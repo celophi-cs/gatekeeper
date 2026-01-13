@@ -2,7 +2,9 @@
 
 using Microsoft.Azure.Cosmos;
 
-public class CosmosDbService
+using Microsoft.Extensions.Options;
+
+public class CosmosDbProvider : ICosmosDbProvider
 {
     private readonly CosmosClient _client;
     private readonly Database _db;
@@ -11,18 +13,19 @@ public class CosmosDbService
     public Container AuthorizationsContainer { get; }
     public Container TokensContainer { get; }
 
-    public CosmosDbService(IConfiguration config)
+    public CosmosDbProvider(IOptions<CosmosOptions> options)
     {
-        var endpoint = config["Cosmos:AccountEndpoint"];
-        var key = config["Cosmos:AccountKey"];
-        var options = new CosmosClientOptions
+        var cosmosOptions = options.Value;
+        var endpoint = cosmosOptions.AccountEndpoint;
+        var key = cosmosOptions.AccountKey;
+        var clientOptions = new CosmosClientOptions
         {
             SerializerOptions = new CosmosSerializationOptions
             {
                 PropertyNamingPolicy = CosmosPropertyNamingPolicy.CamelCase // Use camelCase for property names
             }
         };
-        _client = new CosmosClient(endpoint, key, options);
+        _client = new CosmosClient(endpoint, key, clientOptions);
         _db = _client.GetDatabase("OpenIdDB");
 
         UsersContainer = _db.GetContainer("Users");
