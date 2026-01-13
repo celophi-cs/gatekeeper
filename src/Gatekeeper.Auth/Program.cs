@@ -1,5 +1,7 @@
 
-using Gatekeeper.Auth;
+using Gatekeeper.Auth.Data;
+using Gatekeeper.Auth.Configuration;
+using Gatekeeper.Auth.Endpoints;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using OpenIddict.Abstractions;
@@ -67,22 +69,8 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Minimal API endpoints for registration and login (to be implemented)
-app.MapPost("/api/register", async (UserManager<IdentityUser> userManager, string email, string password) =>
-{
-    var user = new IdentityUser { UserName = email, Email = email };
-    var result = await userManager.CreateAsync(user, password);
-    if (result.Succeeded)
-        return Results.Ok();
-    return Results.BadRequest(result.Errors);
-});
 
-app.MapPost("/api/login", async (SignInManager<IdentityUser> signInManager, string email, string password) =>
-{
-    var result = await signInManager.PasswordSignInAsync(email, password, false, false);
-    if (result.Succeeded)
-        return Results.Ok();
-    return Results.Unauthorized();
-});
+// Register authentication endpoints via extension method
+app.MapAuthEndpoints();
 
 app.Run();
