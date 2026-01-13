@@ -26,6 +26,9 @@ builder.Services.AddOpenIddict()
     options.UseAspNetCore()
            .EnableAuthorizationEndpointPassthrough()
            .EnableTokenEndpointPassthrough();
+
+    options.AddEphemeralEncryptionKey();
+    options.AddEphemeralSigningKey();
 });
 
 builder.Services.AddAuthorization();
