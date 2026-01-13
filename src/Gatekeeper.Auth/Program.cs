@@ -57,7 +57,14 @@ builder.Services.AddOpenIddict()
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+
 var app = builder.Build();
+
+// Seed OpenIddict clients at startup
+using (var scope = app.Services.CreateScope())
+{
+    await OpenIddictSeeder.SeedClientsAsync(scope.ServiceProvider);
+}
 
 if (app.Environment.IsDevelopment())
 {
