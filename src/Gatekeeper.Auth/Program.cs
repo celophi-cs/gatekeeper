@@ -5,6 +5,7 @@ using OpenIddict.Abstractions;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services
+builder.Services.Configure<SeedDataOptions>(builder.Configuration.GetSection("SeedData"));
 builder.Services.AddSingleton<CosmosDbService>();
 builder.Services.AddSingleton<CosmosDbSeeder>();
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
