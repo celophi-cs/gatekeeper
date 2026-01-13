@@ -83,8 +83,17 @@ namespace Gatekeeper.Auth
 
         public ValueTask<ImmutableArray<string>> GetPermissionsAsync(Scope scope, CancellationToken cancellationToken)
         {
-            // Usually scopes define permissions; for now, just return empty
-            return ValueTask.FromResult(ImmutableArray<string>.Empty);
+            // Allow authorization code flow + PKCE + scopes for a public client
+            var permissions = ImmutableArray.Create(
+                OpenIddictConstants.Permissions.Endpoints.Authorization,
+                OpenIddictConstants.Permissions.Endpoints.Token,
+                OpenIddictConstants.Permissions.GrantTypes.AuthorizationCode,
+                OpenIddictConstants.Permissions.GrantTypes.RefreshToken,
+                OpenIddictConstants.Permissions.Prefixes.Scope + "openid",
+                OpenIddictConstants.Permissions.Prefixes.Scope + "profile"
+            );
+
+            return ValueTask.FromResult(permissions);
         }
 
         public ValueTask SetNameAsync(Scope scope, string? name, CancellationToken cancellationToken)

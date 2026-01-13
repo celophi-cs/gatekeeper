@@ -76,7 +76,16 @@ public class CosmosDbSeeder
                 ClientName = client.ClientName,
                 RedirectUris = client.RedirectUris,
                 Secret = client.Secret,
-                TypeClient = client.TypeClient
+                TypeClient = client.TypeClient,
+                Permissions = new[]
+                {
+                    "Endpoints.Authorization",
+                    "Endpoints.Token",
+                    "GrantTypes.AuthorizationCode",
+                    "GrantTypes.RefreshToken",
+                    "Prefixes.Scope:openid",
+                    "Prefixes.Scope:profile"
+                }
             };
             await _cosmos.ClientsContainer.CreateItemAsync(clientEntity, new PartitionKey(clientEntity.Id));
         }

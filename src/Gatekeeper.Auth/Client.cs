@@ -14,4 +14,6 @@ public sealed record Client
     public required string Secret { get; init; }
     [JsonPropertyName("typeClient")]
     public required string TypeClient { get; init; }
+        [JsonPropertyName("permissions")]
+        public string[] Permissions { get; set; } = Array.Empty<string>();
 }
