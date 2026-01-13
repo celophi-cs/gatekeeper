@@ -7,15 +7,3 @@
     <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="LoginAsync" FullWidth>Login</MudButton>
     <MudText Color="Color.Error" Class="mt-2">@ErrorMessage</MudText>
 </MudPaper>
-
-@code {
-    private string Email { get; set; }
-    private string Password { get; set; }
-    private string ErrorMessage { get; set; }
-
-    private async Task LoginAsync()
-    {
-        // TODO: Call Gatekeeper.Auth API for login
-        ErrorMessage = "Demo: Implement login logic.";
-    }
-}

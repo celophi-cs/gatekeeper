@@ -1,3 +1,4 @@
+@page "/"
 @page "/connect/authorize"
 @using MudBlazor
 <MudPaper Class="pa-6 mx-auto mt-12" MaxWidth="500px">
@@ -12,19 +13,3 @@
     <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="GrantAsync" Class="mt-4">Allow</MudButton>
     <MudButton Variant="Variant.Outlined" Color="Color.Secondary" OnClick="DenyAsync" Class="mt-4 ml-2">Deny</MudButton>
 </MudPaper>
-
-@code {
-    private string ClientName { get; set; } = "Demo Client";
-    private List<string> RequestedScopes { get; set; } = new() { "openid", "profile", "email" };
-
-    private Task GrantAsync()
-    {
-        // TODO: Implement consent grant logic
-        return Task.CompletedTask;
-    }
-    private Task DenyAsync()
-    {
-        // TODO: Implement consent deny logic
-        return Task.CompletedTask;
-    }
-}

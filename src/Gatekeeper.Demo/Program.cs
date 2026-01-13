@@ -12,6 +12,11 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents()
     .AddInteractiveWebAssemblyComponents();
 
+// Register providers
+builder.Services.AddHttpClient<Gatekeeper.Demo.Accounts.IAccountProvider, Gatekeeper.Demo.Accounts.AccountProvider>();
+// Register account repository
+builder.Services.AddSingleton<Gatekeeper.Demo.Api.Accounts.IAccountRepository, Gatekeeper.Demo.Api.Accounts.AccountRepository>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
