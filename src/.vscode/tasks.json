@@ -1,0 +1,15 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Create Gatekeeper.Auth project",
+			"type": "shell",
+			"command": "dotnet new webapi -n Gatekeeper.Auth -o Gatekeeper.Auth && dotnet sln Gatekeeper.sln add Gatekeeper.Auth/Gatekeeper.Auth.csproj && dotnet build Gatekeeper.sln",
+			"isBackground": false,
+			"problemMatcher": [
+				"$msCompile"
+			],
+			"group": "build"
+		}
+	]
+}
