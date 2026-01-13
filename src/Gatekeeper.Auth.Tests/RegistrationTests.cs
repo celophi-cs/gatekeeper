@@ -14,15 +14,15 @@ public class RegistrationTests
     {
         var services = new ServiceCollection();
         services.AddLogging();
-        services.AddDbContext<ApplicationDbContext>(options =>
+        services.AddDbContext<AuthDbContext>(options =>
             options.UseInMemoryDatabase("TestDb"));
-        services.AddIdentity<ApplicationUser, IdentityRole>()
-            .AddEntityFrameworkStores<ApplicationDbContext>()
+        services.AddIdentity<IdentityUser, IdentityRole>()
+            .AddEntityFrameworkStores<AuthDbContext>()
             .AddDefaultTokenProviders();
         var provider = services.BuildServiceProvider();
-        var userManager = provider.GetRequiredService<UserManager<ApplicationUser>>();
+        var userManager = provider.GetRequiredService<UserManager<IdentityUser>>();
 
-        var result = await userManager.CreateAsync(new ApplicationUser { UserName = "test@example.com", Email = "test@example.com" }, "Test1234!");
+        var result = await userManager.CreateAsync(new IdentityUser { UserName = "test@example.com", Email = "test@example.com" }, "Test1234!");
         Assert.True(result.Succeeded);
     }
 }

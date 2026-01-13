@@ -6,18 +6,23 @@ using OpenIddict.Abstractions;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add Cosmos DB (local emulator) for Identity and OpenIddict
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseCosmos(
-        builder.Configuration["Cosmos:AccountEndpoint"] ?? "https://localhost:8081", // default local emulator
-        builder.Configuration["Cosmos:AccountKey"] ?? "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5QpQ=", // default local emulator key
-        databaseName: builder.Configuration["Cosmos:DatabaseName"] ?? "GatekeeperAuthDb"
-    )
-);
+// Bind Cosmos options from config
+builder.Services.Configure<CosmosOptions>(builder.Configuration.GetSection("Cosmos"));
 
-// Add ASP.NET Core Identity
-builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
-    .AddEntityFrameworkStores<ApplicationDbContext>()
+// Add Cosmos DB (local emulator) for Identity and OpenIddict using IOptions pattern
+builder.Services.AddDbContext<AuthDbContext>((serviceProvider, options) =>
+{
+    var cosmosOptions = serviceProvider.GetRequiredService<Microsoft.Extensions.Options.IOptions<CosmosOptions>>().Value;
+    options.UseCosmos(
+        cosmosOptions.AccountEndpoint,
+        cosmosOptions.AccountKey,
+        cosmosOptions.DatabaseName
+    );
+});
+
+// Add ASP.NET Core Identity (default IdentityUser/IdentityRole)
+builder.Services.AddIdentity<IdentityUser, IdentityRole>()
+    .AddEntityFrameworkStores<AuthDbContext>()
     .AddDefaultTokenProviders();
 
 // Add OpenIddict
@@ -25,7 +30,7 @@ builder.Services.AddOpenIddict()
     .AddCore(options =>
     {
         options.UseEntityFrameworkCore()
-            .UseDbContext<ApplicationDbContext>();
+            .UseDbContext<AuthDbContext>();
     })
     .AddServer(options =>
     {
@@ -63,16 +68,16 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 // Minimal API endpoints for registration and login (to be implemented)
-app.MapPost("/api/register", async (UserManager<ApplicationUser> userManager, string email, string password) =>
+app.MapPost("/api/register", async (UserManager<IdentityUser> userManager, string email, string password) =>
 {
-    var user = new ApplicationUser { UserName = email, Email = email };
+    var user = new IdentityUser { UserName = email, Email = email };
     var result = await userManager.CreateAsync(user, password);
     if (result.Succeeded)
         return Results.Ok();
     return Results.BadRequest(result.Errors);
 });
 
-app.MapPost("/api/login", async (SignInManager<ApplicationUser> signInManager, string email, string password) =>
+app.MapPost("/api/login", async (SignInManager<IdentityUser> signInManager, string email, string password) =>
 {
     var result = await signInManager.PasswordSignInAsync(email, password, false, false);
     if (result.Succeeded)
