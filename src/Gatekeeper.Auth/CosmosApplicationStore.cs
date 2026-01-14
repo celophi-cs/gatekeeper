@@ -9,10 +9,12 @@ using System.Text.Json;
 public class CosmosApplicationStore : IOpenIddictApplicationStore<Client>
 {
     private readonly ICosmosDbProvider _cosmosDbProvider;
+    private readonly ILogger<CosmosApplicationStore> _logger;
 
-    public CosmosApplicationStore(ICosmosDbProvider cosmosDbProvider)
+    public CosmosApplicationStore(ICosmosDbProvider cosmosDbProvider, ILogger<CosmosApplicationStore> logger)
     {
         _cosmosDbProvider = cosmosDbProvider;
+        _logger = logger;
     }
 
     // ============================
@@ -81,7 +83,108 @@ public class CosmosApplicationStore : IOpenIddictApplicationStore<Client>
         => ValueTask.FromResult<string?>(null);
 
     public ValueTask<ImmutableArray<string>> GetPermissionsAsync(Client application, CancellationToken cancellationToken)
-        => ValueTask.FromResult(ImmutableArray<string>.Empty);
+    {
+        if (application?.Permissions == null || application.Permissions.Length == 0)
+        {
+            _logger?.LogDebug("Client {ClientId} has no permissions configured.", application?.Id);
+            return ValueTask.FromResult(ImmutableArray<string>.Empty);
+        }
+
+        var perms = new List<string>(application.Permissions.Length);
+
+        foreach (var p in application.Permissions)
+        {
+            if (string.IsNullOrWhiteSpace(p))
+                continue;
+
+            // Normalize common seeder formats used historically to OpenIddict constants
+            var trimmed = p.Trim();
+
+            // Direct known mappings
+            if (string.Equals(trimmed, "Endpoints.Authorization", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(trimmed, "authorization", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(trimmed, "endpoint.authorization", StringComparison.OrdinalIgnoreCase))
+            {
+                perms.Add(OpenIddictConstants.Permissions.Endpoints.Authorization);
+                continue;
+            }
+
+            if (string.Equals(trimmed, "Endpoints.Token", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(trimmed, "token", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(trimmed, "endpoint.token", StringComparison.OrdinalIgnoreCase))
+            {
+                perms.Add(OpenIddictConstants.Permissions.Endpoints.Token);
+                continue;
+            }
+
+            if (string.Equals(trimmed, "GrantTypes.AuthorizationCode", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(trimmed, "authorization_code", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(trimmed, "grant_type.authorization_code", StringComparison.OrdinalIgnoreCase))
+            {
+                perms.Add(OpenIddictConstants.Permissions.GrantTypes.AuthorizationCode);
+                // Also allow the corresponding response type (response_type=code)
+                try
+                {
+                    perms.Add(OpenIddictConstants.Permissions.ResponseTypes.Code);
+                }
+                catch
+                {
+                    // Some OpenIddict versions may not expose ResponseTypes; ignore if unavailable
+                }
+                continue;
+            }
+
+            if (string.Equals(trimmed, "GrantTypes.RefreshToken", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(trimmed, "refresh_token", StringComparison.OrdinalIgnoreCase))
+            {
+                perms.Add(OpenIddictConstants.Permissions.GrantTypes.RefreshToken);
+                continue;
+            }
+
+            // Scope prefixes: handle formats like "Prefixes.Scope:openid" or "scp:openid" or just "openid"
+            if (trimmed.IndexOf("prefix", StringComparison.OrdinalIgnoreCase) >= 0 && trimmed.Contains(":"))
+            {
+                var parts = trimmed.Split(':', 2);
+                if (parts.Length == 2 && parts[1] is string scopeName && !string.IsNullOrWhiteSpace(scopeName))
+                {
+                    perms.Add(OpenIddictConstants.Permissions.Prefixes.Scope + scopeName.Trim());
+                    continue;
+                }
+            }
+
+            // If the permission looks like a plain scope name
+            if (string.Equals(trimmed, "openid", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(trimmed, "profile", StringComparison.OrdinalIgnoreCase))
+            {
+                perms.Add(OpenIddictConstants.Permissions.Prefixes.Scope + trimmed.ToLowerInvariant());
+                continue;
+            }
+
+            // Accept raw response type entries like "ResponseTypes.Code" or "response_type:code"
+            if (trimmed.IndexOf("response", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                if (trimmed.IndexOf("code", StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    try
+                    {
+                        perms.Add(OpenIddictConstants.Permissions.ResponseTypes.Code);
+                        continue;
+                    }
+                    catch
+                    {
+                        // ignore if not available
+                    }
+                }
+            }
+
+            // If it already looks like a canonical OpenIddict permission, use as-is
+            perms.Add(trimmed);
+        }
+
+        var result = ImmutableArray.CreateRange(perms.Distinct(StringComparer.Ordinal));
+        _logger?.LogDebug("Client {ClientId} resolved permissions: {Permissions}", application.Id, string.Join(',', result));
+        return ValueTask.FromResult(result);
+    }
 
     public ValueTask<ImmutableArray<string>> GetRequirementsAsync(Client application, CancellationToken cancellationToken)
         => ValueTask.FromResult(ImmutableArray<string>.Empty);
