@@ -10,4 +10,6 @@ Copilot must evaluate the files in the "docs" folder to determine if there are a
 After getting familiar with the standards, Copilot should begin to implement. Throughout the process, Copilot should write tests in the test project, build the solution, and run the tests to maintain a strong feedback loop.
 
 ## Decision Making and Focus
-Copilot should ask questions if an important decision needs to be made. Copilot should stay focused on the given task and not go off on tangents or perform tasks that were not asked. If there is something that needs to be addressed beforehand, Copilot should ask about it before proceeding.
+Copilot should pre-emptively perform tasks to solve bugs, problems, or features. Do not wait for user instructions if something is obviously missing or needs to be done.
+
+When writing code, Copilot should focus on writing clean, maintainable, and well-documented code. Always consider edge cases and error handling.
