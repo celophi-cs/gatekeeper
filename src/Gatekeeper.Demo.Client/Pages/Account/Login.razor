@@ -1,9 +1,0 @@
-@page "/account/login"
-@using MudBlazor
-<MudPaper Class="pa-6 mx-auto mt-12" MaxWidth="400px">
-    <MudText Typo="Typo.h5" Class="mb-4">Sign in</MudText>
-    <MudTextField @bind-Value="Email" Label="Email" Variant="Variant.Outlined" Required="true" Class="mb-2" />
-    <MudTextField @bind-Value="Password" Label="Password" Variant="Variant.Outlined" InputType="InputType.Password" Required="true" Class="mb-4" />
-    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="LoginAsync" FullWidth>Login</MudButton>
-    <MudText Color="Color.Error" Class="mt-2">@ErrorMessage</MudText>
-</MudPaper>
